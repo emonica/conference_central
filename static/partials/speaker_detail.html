@@ -1,0 +1,60 @@
+<div ng-controller="SpeakerDetailCtrl">
+    <div class="row">
+        <div class="col-lg-12">
+            <div id="messages" class="alert alert-{{alertStatus}}" ng-show="messages">
+                <span ng-bind="messages"></span>
+                <i class="dismiss-messages pull-right glyphicon glyphicon-remove" ng-click="messages = ''"
+                   ng-show="messages"></i>
+            </div>
+            <img class="spinner" src="/img/ajax-loader.gif" ng-show="loading"/>
+        </div>
+    </div>
+
+    <div class="row" ng-init="init()">
+        <div class="col-md-9">    
+            <form class="form" novalidate role="form">
+                <fieldset>
+                    <div>
+                        <label for="name">Name: </label>
+                        <span id="name">{{speaker.name}}</span>
+                    </div>
+                    <div>
+                        <label for="email">Email: </label>
+                        <span id="email">{{speaker.email}}</span>
+                    </div>
+                    <div>
+                        <label for="bio">Bio: </label>
+                        <span id="bio">{{speaker.bio}}</span>
+                    </div>
+                </fieldset>
+            </form>
+
+            <div class="table-responsive" ng-show="sessions.length > 0">
+                <table id="session-table" class="table table-striped table-hover">
+                    <thead>
+                    <tr>
+                       <th>Name</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>Duration</th>
+                        <th>Speaker</th>
+                        <th>Session Type</th>
+                        <th>Location</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="session in sessions">
+                        <td>{{session.name}}</td>
+                        <td>{{session.date | date:'dd-MMMM-yyyy'}}</td>
+                        <td>{{session.startTime}}</td>
+                        <td>{{session.duration}}</td>
+                        <td>{{session.speakerId}}</td>
+                        <td>{{session.typeOfSession}}</td>
+                        <td>{{session.location}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

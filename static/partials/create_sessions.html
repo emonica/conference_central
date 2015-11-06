@@ -1,0 +1,115 @@
+<div ng-controller="CreateSessionCtrl">
+    <div class="row">
+        <div class="col-lg-12">
+            <div id="messages" class="alert alert-{{alertStatus}}" ng-show="messages">
+                <span ng-bind="messages"></span>
+                <i class="dismiss-messages pull-right glyphicon glyphicon-remove" ng-click="messages = ''"
+                   ng-show="messages"></i>
+            </div>
+            <img class="spinner" src="/img/ajax-loader.gif" ng-show="loading"/>
+        </div>
+    </div>
+    <div class="row" ng-init="init()">
+        <div class="col-md-8">
+            <h3>Create a session</h3>
+
+            <form name="sessionForm" novalidate role="form">
+                <div class="form-group">
+                    <label for="name">Name <span class="required">*</span></label>
+                    <span class="label label-danger"
+                        ng-show="sessionForm.name.$error.required">Required!</span>
+                    <input id="name" type="text" name="name" ng-model="session.name" class="form-control"
+                           ng-required="true"/>
+                </div>
+
+                <div class="form-group">
+                    <label for="highlights">Highlights</label>
+                    <textarea id="highlights" type="text" name="highlights" ng-model="session.highlights"
+                              class="form-control"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="typeOfSession">Session Type</label>
+                    <select id="typeOfSession" ng-model="session.typeOfSession" name="typeOfSession" 
+                    				ng-options="type for type in typeOfSessions"
+                            class="form-control">
+                    </select>
+                </div>
+
+                <div class="form-group" ng-controller="DatepickerCtrl">
+                    <label for="date">Session Date</label>
+                    <span class="label label-danger"
+                        ng-show="!isValidDate()">Date must coincide with conference dates!</span>
+                    <p class="input-group">
+                        <input id="date" type="text" class="form-control" datepicker-popup="{{format}}"
+                               ng-model="session.date" is-open="opened"
+                               datepicker-options="dateOptions"
+                               close-text="Close"/>
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" ng-click="open($event)"><i
+                                class="glyphicon glyphicon-calendar"></i>
+                        </button>
+                    </span>
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label for="startTime">Start Time</label>
+                    <input id="startTime" type="text" name="startTime" ng-model="session.startTime" class="form-control"/>
+                </div>
+
+                <div class="form-group">
+                    <label for="duration">Duration</label>
+                    <span class="label label-danger"
+                        ng-show="!isValidDuration()">Must be an integer!</span>
+                    <!-- The input type is text as the session.duration will be undefined,
+                    hence isValidDuration will be true when input type is number -->
+                    <input id="duration" type="text" name="duration" ng-model="session.duration"
+                           class="form-control"/>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <input id="location" type="text" name="location" ng-model="session.location" class="form-control"/>
+                </div>
+
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <p class="panel-title">Speaker</p>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label for="speakerId">Speaker </label>
+                            <select id="speakerId" ng-model="session.speakerId" name="speakerId" 
+                                    ng-options="s.email as s.name for s in speakers"
+                                    ng-disabled="session.speakerEmail"
+                                    class="form-control">
+                                    <option value="">Select existing speaker</option>
+                            </select>
+                        </div>
+
+                        <div class="form-inline" >
+                            <div class="form-group">
+                                <label for="speakerName">Speaker Name</label>
+                                <input id="speakerName" type="text" name="speakerName" 
+                                    ng-model="session.speakerName" class="form-control" ng-disabled="session.speakerId">
+                            </div>
+                            <div class="form-group">
+                                <label for="speakerEmail">Speaker Email</label>
+                                <input id="speakerEmail" type="email" name="speakerEmail" 
+                                    ng-model="session.speakerEmail" class="form-control" ng-disabled="session.speakerId">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                
+
+                <button ng-click="createSession(sessionForm)" class="btn btn-primary"
+                        ng-disabled="!isValidSession(sessionForm) || loading">Create
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

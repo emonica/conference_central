@@ -28,6 +28,14 @@ var app = angular.module('conferenceApp',
                     templateUrl: '/partials/conference_detail.html',
                     controller: 'ConferenceDetailCtrl'
                 }).
+                when('/conference/detail/:websafeConferenceKey/create_session', {
+                    templateUrl: '/partials/create_sessions.html',
+                    controller: 'CreateSessionCtrl'
+                }).
+                when('/speaker/detail/:speakerId', {
+                    templateUrl: '/partials/speaker_detail.html',
+                    controller: 'SpeakerDetailCtrl'
+                }).
                 when('/profile', {
                     templateUrl: '/partials/profile.html',
                     controller: 'MyProfileCtrl'
@@ -39,6 +47,7 @@ var app = angular.module('conferenceApp',
                     redirectTo: '/'
                 });
         }]);
+
 
 /**
  * @ngdoc filter

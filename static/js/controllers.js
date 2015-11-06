@@ -18,6 +18,12 @@ var conferenceApp = conferenceApp || {};
 conferenceApp.controllers = angular.module('conferenceControllers', ['ui.bootstrap']);
 
 /**
+ * Holds the default values for the input candidates for session type.
+ * @type {string[]}
+ */
+conferenceApp.controllers.value('typeOfSessions', ['Workshop', 'Lecture', 'Keynote']);
+        
+/**
  * @ngdoc controller
  * @name MyProfileCtrl
  *
@@ -547,10 +553,16 @@ conferenceApp.controllers.controller('ShowConferenceCtrl', function ($scope, $lo
  * @description
  * A controller used for the conference detail page.
  */
-conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $log, $routeParams, HTTP_ERRORS) {
+conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $log, $routeParams, typeOfSessions, HTTP_ERRORS) {
     $scope.conference = {};
+    $scope.sessions = [];
 
     $scope.isUserAttending = false;
+    $scope.isOwner = false;
+    $scope.typeOfSession = "";
+    $scope.typeOfSessions = typeOfSessions;
+
+
 
     /**
      * Initializes the conference detail page.
@@ -558,6 +570,27 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
      *
      */
     $scope.init = function () {
+        $scope.loading = true;
+        gapi.client.conference.getConferenceSessions({
+            websafeConferenceKey: $routeParams.websafeConferenceKey
+        }).execute(function (resp){
+            $scope.$apply(function () {
+                $scope.loading = false;
+                if (resp.error) {
+                    // failed to get sessions
+                    var errorMessage = resp.error.message || '';
+                    $scope.messages = 'Failed to load current conference sessions : ' + errorMessage;
+                    $scope.alertStatus = 'warning';
+                    $log.error($scope.messages);
+                } else {
+                    $scope.sessions = resp.result.items;
+                    $scope.alertStatus = 'success';
+                    $scope.messages = 'Conference sessions retrieved successfully';
+                    $log.info($scope.messages); 
+                }
+            });
+        });
+
         $scope.loading = true;
         gapi.client.conference.getConference({
             websafeConferenceKey: $routeParams.websafeConferenceKey
@@ -588,17 +621,26 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
                     // Failed to get a user profile.
                 } else {
                     var profile = resp.result;
-                    for (var i = 0; i < profile.conferenceKeysToAttend.length; i++) {
-                        if ($routeParams.websafeConferenceKey == profile.conferenceKeysToAttend[i]) {
-                            // The user is attending the conference.
-                            $scope.alertStatus = 'info';
-                            $scope.messages = 'You are attending this conference';
-                            $scope.isUserAttending = true;
+                    // $log.info($scope.conference.organizerUserId + ' ' + profile.mainEmail);
+                    if ($scope.conference.organizerUserId == profile.mainEmail) {
+                        // $log.info(profile.mainEmail);
+                        $scope.isOwner = true;
+                    }
+                    if (profile.conferenceKeysToAttend) {
+                        for (var i = 0; i < profile.conferenceKeysToAttend.length; i++) {
+                            if ($routeParams.websafeConferenceKey == profile.conferenceKeysToAttend[i]) {
+                                // The user is attending the conference.
+                                $scope.alertStatus = 'info';
+                                $scope.messages = 'You are attending this conference';
+                                $scope.isUserAttending = true;
+                            }
                         }
                     }
                 }
             });
         });
+
+        
     };
 
 
@@ -679,8 +721,270 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
             });
         });
     };
+
+    $scope.getSessionsByType = function() {
+        $scope.loading = true;
+        var f;
+        if ($scope.typeOfSession == null) {
+            f = gapi.client.conference.getConferenceSessions({
+            websafeConferenceKey: $routeParams.websafeConferenceKey});
+        }
+        else {
+            f = gapi.client.conference.getConferenceSessionsByType({
+                websafeConferenceKey: $routeParams.websafeConferenceKey,
+                typeOfSession: $scope.typeOfSession
+            });
+        }
+        f.execute(function (resp){
+            $scope.$apply(function () {
+                $scope.loading = false;
+                if (resp.error) {
+                    // failed to get sessions
+                    var errorMessage = resp.error.message || '';
+                    $scope.messages = 'Failed to load current conference sessions : ' + errorMessage;
+                    $scope.alertStatus = 'warning';
+                    $log.error($scope.messages);
+                } else {
+                    $scope.sessions = resp.result.items;
+                    $scope.alertStatus = 'success';
+                    $scope.messages = 'Conference sessions retrieved successfully';
+                    $log.info($scope.messages); 
+                }
+            });
+        });
+    };
 });
 
+
+/**
+ * @ngdoc controller
+ * @name CreateSessionCtrl
+ *
+ * @description
+ * A controller used for the Create session page.
+ */
+conferenceApp.controllers.controller('CreateSessionCtrl',
+    function ($scope, $log, $routeParams, typeOfSessions, HTTP_ERRORS) {
+
+        /**
+         * The conference object being edited in the page.
+         * @type {{}|*}
+         */
+        $scope.session = $scope.session || {};
+        $scope.speakers = [];
+        $scope.conference = {};
+        $scope.typeOfSessions = typeOfSessions;
+
+
+
+        /**
+         * Tests if the session.date is valid (in between conference start and end dates)
+         * @returns {boolean} true if the date is valid, false otherwise.
+         */
+        $scope.isValidDate = function () {
+            if (!$scope.session.date) {
+                return true;
+            }
+            if ($scope.conference.startDate == 'None' && 
+                $scope.conference.endDate == 'None') {
+                return true;
+            }
+            
+            /* This is needed to avoid timezone conflicts. startDate and endDate
+             * get passed as string UTC dates, but the session date can get 
+             * the timezone info from the browser. We need all of them to be
+             * created the same way so that the comparison makes sense. */
+            var parts = $scope.conference.startDate.split('-');
+            var startConf = new Date(parts[0], parts[1]-1, parts[2]);
+            
+            if ($scope.conference.endDate == 'None') {
+                return startConf <= $scope.session.date;
+            }
+
+            parts = $scope.conference.endDate.split('-');
+            var endConf = new Date(parts[0], parts[1]-1, parts[2]);
+            return (startConf <= $scope.session.date && 
+                    $scope.session.date <= endConf);
+        }
+
+        /**
+         * Tests if the arugment is an integer and not negative.
+         * @returns {boolean} true if the argument is an integer, false otherwise.
+         */
+        $scope.isValidDuration = function () {
+            if (!$scope.session.duration || $scope.session.duration.length == 0) {
+                return true;
+            }
+            return /^[\d]+$/.test($scope.session.duration) && 
+                $scope.session.duration >= 0;
+        }
+
+        /**
+         * Tests if $scope.session is valid.
+         * @param sessionForm the form object from the create_sessions.html page.
+         * @returns {boolean|*} true if valid, false otherwise.
+         */
+        $scope.isValidSession = function (sessionForm) {
+            return !sessionForm.$invalid &&
+                $scope.isValidDuration() &&
+                $scope.isValidDate();
+        }
+
+
+        /**
+         * Initializes the conference detail page.
+         * Invokes the conference.getConference method and sets the returned conference in the $scope.
+         *
+         */
+        $scope.init = function () {
+            $scope.loading = true;
+            gapi.client.conference.getConference({
+                websafeConferenceKey: $routeParams.websafeConferenceKey
+            }).execute(function (resp) {
+                $scope.$apply(function () {
+                    $scope.loading = false;
+                    if (resp.error) {
+                        // The request has failed.
+                        var errorMessage = resp.error.message || '';
+                        $scope.messages = 'Failed to get the conference : ' + $routeParams.websafeKey
+                            + ' ' + errorMessage;
+                        $scope.alertStatus = 'warning';
+                        $log.error($scope.messages);
+                    } else {
+                        // The request has succeeded.
+                        $scope.alertStatus = 'success';
+                        $scope.conference = resp.result;
+                    }
+                });
+            });
+
+            $scope.loading = true;
+            gapi.client.conference.getSpeakers().execute(function (resp){
+                $scope.$apply(function () {
+                    $scope.loading = false;
+                    if (resp.error) {
+                        // failed to get sessions
+                        var errorMessage = resp.error.message || '';
+                        $scope.messages = 'Failed to load speakers : ' + errorMessage;
+                        $scope.alertStatus = 'warning';
+                        $log.error($scope.messages);
+                    } else {
+                        $scope.speakers = resp.result.items;
+                        $scope.alertStatus = 'success';
+                        $scope.messages = 'Conference speakers retrieved successfully';
+                        $log.info($scope.messages);                         
+                    }
+                });
+            });
+        }
+
+        /**
+         * Invokes the conference.createSession API.
+         *
+         * @param sessionForm the form object.
+         */
+        $scope.createSession = function (sessionForm) {
+            if (!$scope.isValidSession(sessionForm)) {
+                return;
+            }
+
+            $scope.loading = true;
+            gapi.client.conference.createSession(
+                angular.extend({}, $scope.session, {websafeConferenceKey: $routeParams.websafeConferenceKey})
+                ).execute(function (resp) {
+                    $scope.$apply(function () {
+                        $scope.loading = false;
+                        if (resp.error) {
+                            // The request has failed.
+                            var errorMessage = resp.error.message || '';
+                            $scope.messages = 'Failed to create a session : ' + errorMessage;
+                            $scope.alertStatus = 'warning';
+                            $log.error($scope.messages + ' Session : ' + JSON.stringify($scope.session));
+
+                            if (resp.code && resp.code == HTTP_ERRORS.UNAUTHORIZED) {
+                                oauth2Provider.showLoginModal();
+                                return;
+                            }
+                        } else {
+                            // The request has succeeded.
+                            $scope.messages = 'The session has been created : ' + resp.result.name;
+                            $scope.alertStatus = 'success';
+                            $scope.submitted = false;
+                            $scope.session = {};
+                            $log.info($scope.messages + ' : ' + JSON.stringify(resp.result));
+                        }
+                    });
+                });
+        };
+    });
+
+
+/**
+ * @ngdoc controller
+ * @name SpeakerDetailCtrl
+ *
+ * @description
+ * A controller used for the Speaker details page.
+ */
+conferenceApp.controllers.controller('SpeakerDetailCtrl',
+    function ($scope, $log, $routeParams, HTTP_ERRORS) {
+
+        /**
+         * The conference object being edited in the page.
+         * @type {{}|*}
+         */
+        $scope.speaker = $scope.speaker || {};
+        $scope.sessions = [];
+
+        /**
+         * Initializes the conference detail page.
+         * Invokes the conference.getConference method and sets the returned conference in the $scope.
+         *
+         */
+        $scope.init = function () {
+            $scope.loading = true;
+            gapi.client.conference.getSpeakerDetails({
+                speakerId: $routeParams.speakerId
+            }).execute(function (resp){
+                $scope.$apply(function () {
+                    $scope.loading = false;
+                    if (resp.error) {
+                        // failed to get speaker
+                        var errorMessage = resp.error.message || '';
+                        $scope.messages = 'Failed to load speaker details : ' + errorMessage;
+                        $scope.alertStatus = 'warning';
+                        $log.error($scope.messages);
+                    } else {
+                        $scope.speaker = resp.result;
+                        $scope.alertStatus = 'success';
+                        $scope.messages = 'Speaker details retrieved successfully';
+                        $log.info($scope.messages);                         
+                    }
+                });
+            });
+
+            $scope.loading = true;
+            gapi.client.conference.getSessionsBySpeaker({
+                speakerId: $routeParams.speakerId
+            }).execute(function (resp){
+                $scope.$apply(function () {
+                    $scope.loading = false;
+                    if (resp.error) {
+                        // failed to get sessions
+                        var errorMessage = resp.error.message || '';
+                        $scope.messages = 'Failed to load speaker sessions : ' + errorMessage;
+                        $scope.alertStatus = 'warning';
+                        $log.error($scope.messages);
+                    } else {
+                        $scope.sessions = resp.result.items;
+                        $scope.alertStatus = 'success';
+                        $scope.messages = 'Speaker sessions retrieved successfully';
+                        $log.info($scope.messages); 
+                    }
+                });
+            });
+        };
+    });
 
 /**
  * @ngdoc controller
@@ -835,3 +1139,4 @@ conferenceApp.controllers.controller('DatepickerCtrl', function ($scope) {
     $scope.formats = ['dd-MMMM-yyyy', 'yyyy/MM/dd', 'shortDate'];
     $scope.format = $scope.formats[0];
 });
+

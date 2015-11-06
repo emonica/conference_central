@@ -51,6 +51,48 @@
                     </div>
                 </fieldset>
             </form>
+
+            <p><a class="btn btn-default" ng-show="isOwner" href="#/conference/detail/{{conference.websafeKey}}/create_session">Add session</a>
+            </p>
+
+            <div class="form-group">
+                <label for="typeOfSession">Session Type</label>
+                <select id="typeOfSession" ng-model="typeOfSession" name="typeOfSession" 
+                                ng-options="type for type in typeOfSessions"
+                                ng-change="getSessionsByType()"
+                        class="form-control">
+                    <option value="">All</option>
+                </select>
+            </div>
+
+            <div class="table-responsive" ng-show="sessions.length > 0">
+                <table id="session-table" class="table table-striped table-hover">
+                    <thead>
+                    <tr>
+                        <!-- <th>Details</th> -->
+                        <th>Name</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>Duration</th>
+                        <th>Speaker</th>
+                        <th>Session Type</th>
+                        <th>Location</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="session in sessions">
+                        <!-- <td><a href="#/conference/detail/{{conference.websafeKey}}">Details</a></td> -->
+                        <td>{{session.name}}</td>
+                        <td>{{session.date | date:'dd-MMMM-yyyy'}}</td>
+                        <td>{{session.startTime}}</td>
+                        <td>{{session.duration}}</td>
+                        <td><a href="#/speaker/detail/{{session.speakerId}}">{{session.speakerId}}</a></td>
+                        <td>{{session.typeOfSession}}</td>
+                        <td>{{session.location}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

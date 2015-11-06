@@ -60,6 +60,7 @@ class Conference(ndb.Model):
     endDate         = ndb.DateProperty()
     maxAttendees    = ndb.IntegerProperty()
     seatsAvailable  = ndb.IntegerProperty()
+    sessionKeys     = ndb.StringProperty(repeated=True)
 
 class ConferenceForm(messages.Message):
     """ConferenceForm -- Conference outbound form message"""
@@ -75,6 +76,7 @@ class ConferenceForm(messages.Message):
     endDate         = messages.StringField(10) #DateTimeField()
     websafeKey      = messages.StringField(11)
     organizerDisplayName = messages.StringField(12)
+    sessionKeys     = messages.StringField(13, repeated=True)
 
 class ConferenceForms(messages.Message):
     """ConferenceForms -- multiple Conference outbound form message"""
@@ -107,4 +109,48 @@ class ConferenceQueryForm(messages.Message):
 class ConferenceQueryForms(messages.Message):
     """ConferenceQueryForms -- multiple ConferenceQueryForm inbound form message"""
     filters = messages.MessageField(ConferenceQueryForm, 1, repeated=True)
+
+
+class Speaker(ndb.Model):
+    """Speaker -- Conference speaker object"""
+    name = ndb.StringProperty(required=True)
+    bio = ndb.StringProperty()
+    email = ndb.StringProperty(required=True)
+
+class SpeakerForm(messages.Message):
+    name = messages.StringField(1)
+    bio = messages.StringField(2)
+    email = messages.StringField(3)
+
+class SpeakerForms(messages.Message):
+    items = messages.MessageField(SpeakerForm, 1, repeated=True)
+
+
+class Session(ndb.Model):
+    """Session -- Session object for conferences"""
+    name = ndb.StringProperty(required=True)
+    highlights = ndb.StringProperty()
+    speakerId = ndb.StringProperty()
+    duration = ndb.IntegerProperty()
+    typeOfSession = ndb.StringProperty()
+    date = ndb.DateProperty()
+    startTime = ndb.TimeProperty()
+    location = ndb.StringProperty()
+
+
+class SessionForm(messages.Message):
+    name = messages.StringField(1)
+    highlights = messages.StringField(2)
+    speakerId = messages.StringField(3)
+    duration = messages.IntegerField(4)
+    typeOfSession = messages.StringField(5)
+    date = messages.StringField(6)
+    startTime = messages.StringField(7)
+    location = messages.StringField(8)
+    speakerName = messages.StringField(9)
+    speakerEmail = messages.StringField(10)
+
+class SessionForms(messages.Message):
+    items = messages.MessageField(SessionForm, 1, repeated=True)
+
 
