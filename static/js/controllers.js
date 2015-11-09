@@ -34,6 +34,7 @@ conferenceApp.controllers.controller('MyProfileCtrl',
     function ($scope, $log, oauth2Provider, HTTP_ERRORS) {
         $scope.submitted = false;
         $scope.loading = false;
+        $scope.sessions = [];
 
         /**
          * The initial profile retrieved from the server to know the dirty state.
@@ -84,6 +85,27 @@ conferenceApp.controllers.controller('MyProfileCtrl',
                         });
                     }
                 );
+        
+                $scope.loading = true;
+                gapi.client.conference.getSessionsInWishlist().
+                    execute(function (resp) {
+                        $scope.$apply(function () {
+                            $scope.loading = false;
+                            if (resp.error) {
+                                // failed to get sessions
+                                var errorMessage = resp.error.message || '';
+                                $scope.messages = 'Failed to load wishlist sessions : ' + errorMessage;
+                                $scope.alertStatus = 'warning';
+                                $log.error($scope.messages);
+                            } else {
+                                $scope.sessions = resp.result.items;
+                                $scope.alertStatus = 'success';
+                                $scope.messages = 'Sessions in wishlist retrieved successfully';
+                                $log.info($scope.messages);
+                            }
+                        });
+                    });
+
             };
             if (!oauth2Provider.signedIn) {
                 var modalInstance = oauth2Provider.showLoginModal();
@@ -553,7 +575,7 @@ conferenceApp.controllers.controller('ShowConferenceCtrl', function ($scope, $lo
  * @description
  * A controller used for the conference detail page.
  */
-conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $log, $routeParams, typeOfSessions, HTTP_ERRORS) {
+conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $log, $routeParams, $route, typeOfSessions, HTTP_ERRORS) {
     $scope.conference = {};
     $scope.sessions = [];
 
@@ -561,6 +583,7 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
     $scope.isOwner = false;
     $scope.typeOfSession = "";
     $scope.typeOfSessions = typeOfSessions;
+    $scope.wishlist = [];
 
 
 
@@ -621,6 +644,9 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
                     // Failed to get a user profile.
                 } else {
                     var profile = resp.result;
+                    if (profile.sessionWishlist) {
+                        $scope.wishlist = profile.sessionWishlist;
+                    }
                     // $log.info($scope.conference.organizerUserId + ' ' + profile.mainEmail);
                     if ($scope.conference.organizerUserId == profile.mainEmail) {
                         // $log.info(profile.mainEmail);
@@ -753,6 +779,86 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
             });
         });
     };
+
+    $scope.isInWishlist = function(sessionKey) {
+        for (var i=0; i < $scope.wishlist.length; i++) {
+            if ($scope.wishlist[i] == sessionKey)
+                return true;
+        }
+        return false;
+    };
+
+    $scope.addToWishlist = function(sessionKey) {
+        $scope.loading = true;
+        gapi.client.conference.addToWishlist({
+            websafeConferenceKey: $routeParams.websafeConferenceKey,
+            sessionKey: sessionKey
+        }).execute(function (resp) {
+            $scope.$apply(function () {
+                $scope.loading = false;
+                if (resp.error) {
+                    // The request has failed.
+                    var errorMessage = resp.error.message || '';
+                    $scope.messages = 'Failed to add session to wishlist : ' + errorMessage;
+                    $scope.alertStatus = 'warning';
+                    $log.error($scope.messages);
+
+                    if (resp.code && resp.code == HTTP_ERRORS.UNAUTHORIZED) {
+                        oauth2Provider.showLoginModal();
+                        return;
+                    }
+                } else {
+                    if (resp.result) {
+                        // success
+                        $scope.messages = 'Added session to wishlist';
+                        $scope.alertStatus = 'success';
+                        $route.reload();
+                    } else {
+                        $scope.messages = 'Failed to add session to wishlist';
+                        $scope.alertStatus = 'warning';
+                    }
+                }
+            });
+        });
+    };
+
+    $scope.removeFromWishlist = function(sessionKey) {
+        $scope.loading = true;
+        gapi.client.conference.removeFromWishlist({
+            websafeConferenceKey: $routeParams.websafeConferenceKey,
+            sessionKey: sessionKey
+        }).execute(function (resp) {
+            $scope.$apply(function () {
+                $scope.loading = false;
+                if (resp.error) {
+                    // The request has failed.
+                    var errorMessage = resp.error.message || '';
+                    $scope.messages = 'Failed to remove session from wishlist : ' + errorMessage;
+                    $scope.alertStatus = 'warning';
+                    $log.error($scope.messages);
+
+                    if (resp.code && resp.code == HTTP_ERRORS.UNAUTHORIZED) {
+                        oauth2Provider.showLoginModal();
+                        return;
+                    }
+                } else {
+                    if (resp.result) {
+                        // success
+                        $scope.messages = 'Removed session from wishlist';
+                        $scope.alertStatus = 'success';
+                        $route.reload();
+                    } else {
+                        $scope.messages = 'Failed to remove session from wishlist';
+                        $scope.alertStatus = 'warning';
+                    }
+                }
+            });
+        });
+    };
+
+    // $scope.reloadRoute = function() {
+    //     $state.reload();
+    // };
 });
 
 
