@@ -710,7 +710,7 @@ class ConferenceApi(remote.Service):
             data['startTime'] = datetime.strptime(data['startTime'][:5], "%H:%M").time()
 
         # Add speaker id
-        print data['speakerName'], data['speakerEmail'], data['speakerId']
+        # print data['speakerName'], data['speakerEmail'], data['speakerId']
         if data['speakerName'] and data['speakerEmail']:
             speaker = self._getSpeaker(data['speakerName'], data['speakerEmail'])
             data['speakerId'] = speaker.email
@@ -727,6 +727,10 @@ class ConferenceApi(remote.Service):
         # create Session & return (modified) SessionForm
         session = Session(**data)
         session.put()
+        taskqueue.add(params={'websafeConfKey': request.websafeConferenceKey,
+            'speakerId': data['speakerId']},
+            url='/tasks/check_featured_speaker'
+        )
         return self._copySessionToForm(session)
 
     def _getConferenceSessions(self, request):
@@ -861,6 +865,47 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(session) for session in sessions]
         )
+          
+
+    @staticmethod
+    def _checkFeaturedSpeaker(websafeConfKey, speakerId):
+        """Check if speaker should be featured (has more sessions
+            in conf). If so, add to memcache with sessions"""
+        # get the conference and its key
+        c_key = ndb.Key(urlsafe=websafeConfKey)
+        conf = c_key.get()
+        # check that conference exists
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % websafeConfKey)
+
+        # get sessions
+        sessions = Session.query(ancestor=c_key)
+
+        speakerSessions = []
+        for session in sessions:
+            if session.speakerId == speakerId:
+                speakerSessions.append(session.name)
+
+        if len(speakerSessions) > 1:
+            # get Speaker from datastore
+            s_key = ndb.Key(Speaker, speakerId) 
+            speaker = s_key.get()
+            featuredSpeaker = "Featured speaker: " + speaker.name + \
+                " with sessions " + ", ".join(speakerSessions)
+
+            memcache.set(websafeConfKey, featuredSpeaker)
+            return True
+
+        return False
+ 
+
+    @endpoints.method(CONF_GET_REQUEST, StringMessage,
+            path='conference/{websafeConferenceKey}/getFeaturedSpeaker',
+            http_method='GET', name='getFeaturedSpeaker')
+    def getFeaturedSpeaker(self, request):
+        """Return featured speaker from memcache."""
+        return StringMessage(data=memcache.get(request.websafeConferenceKey) or "")
 
 
 
