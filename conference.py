@@ -13,7 +13,7 @@ created by wesc on 2014 apr 21
 __author__ = 'wesc+api@google.com (Wesley Chun)'
 
 
-from datetime import datetime
+from datetime import datetime, time
 from time import strftime
 
 import endpoints
@@ -111,6 +111,18 @@ WISHLIST_POST_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
     websafeConferenceKey=messages.StringField(1),
     sessionKey=messages.StringField(2),
+)
+
+CONF_IN_TOWN_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    city=messages.StringField(1),
+    startDate=messages.StringField(2),
+    endDate=messages.StringField(3),
+)
+
+CONF_POPULAR_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    topic=messages.StringField(1),
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -645,11 +657,12 @@ class ConferenceApi(remote.Service):
                 if field.name == "date":
                     setattr(sf, field.name, str(getattr(session, field.name)))
                 elif field.name == "startTime":
-                    if getattr(session, field.name):
-                        # print (getattr(session, field.name)).hour
+                    stime = getattr(session, field.name)
+                    if stime:
+                        minute = str(stime.minute)
+                        minute = minute if len(minute)==2 else "0"+minute
                         setattr(sf, field.name, 
-                            str(getattr(session, field.name).hour) + ':' + 
-                            str(getattr(session, field.name).minute))
+                            str(stime.hour) + ':' + minute)
                     else:
                         setattr(sf, field.name, 'N/A')
                 else:
@@ -906,6 +919,55 @@ class ConferenceApi(remote.Service):
     def getFeaturedSpeaker(self, request):
         """Return featured speaker from memcache."""
         return StringMessage(data=memcache.get(request.websafeConferenceKey) or "")
+
+
+    @endpoints.method(message_types.VoidMessage, SessionForms,
+            path='queryPlayground',
+            http_method='GET', name='queryPlayground')
+    def queryPlayground(self, request):
+        """Query Playground"""
+        q = Session.query()
+        q = q.filter(Session.startTime < time(19, 0))
+        q = q.filter(Session.typeOfSession.IN(["Lecture", "Keynote"]))
+        
+        
+        return SessionForms(
+            items=[self._copySessionToForm(session) for session in q]
+        )
+
+
+    @endpoints.method(CONF_IN_TOWN_REQUEST, ConferenceForms,
+            path="getConfsInTownInInterval",
+            http_method='GET', name='getConfsInTownInInterval')
+    def getConfsInTownInInterval(self, request):
+        """See what conferences are in a certain town and 
+            are scheduled to start in a given time interval."""
+        q = Conference.query()
+        startDate = datetime.strptime(request.startDate[:10], "%Y-%m-%d").date()
+        endDate = datetime.strptime(request.endDate[:10], "%Y-%m-%d").date()
+        q = q.filter(Conference.city == request.city)
+        q = q.filter(Conference.startDate >= startDate)
+        q = q.filter(Conference.startDate <= endDate)
+        
+        return ConferenceForms(
+            items = [self._copyConferenceToForm(conf, "") for conf in q]
+        )
+
+
+    @endpoints.method(CONF_POPULAR_REQUEST, ConferenceForms,
+            path="getPopularConferences",
+            http_method='GET', name='getPopularConferences')
+    def getPopularConferences(self, request):
+        """Get popular conferences on a given topic."""
+        q = Conference.query()
+        q = q.filter(Conference.topics==request.topic)
+        q = q.filter(Conference.maxAttendees >= 100)
+        q = q.filter(Conference.seatsAvailable.IN(range(1,20)))
+        
+        return ConferenceForms(
+            items = [self._copyConferenceToForm(conf, "") for conf in q]
+        )
+
 
 
 

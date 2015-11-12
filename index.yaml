@@ -52,6 +52,11 @@ indexes:
 - kind: Conference
   properties:
   - name: city
+  - name: startDate
+
+- kind: Conference
+  properties:
+  - name: city
   - name: topics
   - name: name
 
@@ -92,5 +97,16 @@ indexes:
 
 - kind: Conference
   properties:
+  - name: seatsAvailable
+  - name: topics
+  - name: maxAttendees
+
+- kind: Conference
+  properties:
   - name: topics
   - name: name
+
+- kind: Session
+  properties:
+  - name: typeOfSession
+  - name: startTime
