@@ -590,6 +590,7 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
     /**
      * Initializes the conference detail page.
      * Invokes the conference.getConference method and sets the returned conference in the $scope.
+     * Also gets the conference's sessions.
      *
      */
     $scope.init = function () {
@@ -647,9 +648,7 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
                     if (profile.sessionWishlist) {
                         $scope.wishlist = profile.sessionWishlist;
                     }
-                    // $log.info($scope.conference.organizerUserId + ' ' + profile.mainEmail);
                     if ($scope.conference.organizerUserId == profile.mainEmail) {
-                        // $log.info(profile.mainEmail);
                         $scope.isOwner = true;
                     }
                     if (profile.conferenceKeysToAttend) {
@@ -748,6 +747,11 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
         });
     };
 
+    /**
+     * Invokes the conference.getConferenceSessions or
+     * conference.getConferenceSessionsByType method according to what the
+     * user selected as the type of session (by default all types are displayed)
+     */
     $scope.getSessionsByType = function() {
         $scope.loading = true;
         var f;
@@ -780,6 +784,9 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
         });
     };
 
+    /**
+     * Checks if a cerain session is in the user's wishlist
+     */    
     $scope.isInWishlist = function(sessionKey) {
         for (var i=0; i < $scope.wishlist.length; i++) {
             if ($scope.wishlist[i] == sessionKey)
@@ -788,6 +795,9 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
         return false;
     };
 
+    /**
+     * Invokes the conference.addToWishList method.
+     */
     $scope.addToWishlist = function(sessionKey) {
         $scope.loading = true;
         gapi.client.conference.addToWishlist({
@@ -822,6 +832,9 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
         });
     };
 
+    /**
+     * Invokes the conference.removeFromWishlist method.
+     */
     $scope.removeFromWishlist = function(sessionKey) {
         $scope.loading = true;
         gapi.client.conference.removeFromWishlist({
@@ -855,10 +868,6 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
             });
         });
     };
-
-    // $scope.reloadRoute = function() {
-    //     $state.reload();
-    // };
 });
 
 

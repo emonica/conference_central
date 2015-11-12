@@ -578,11 +578,6 @@ class ConferenceApi(remote.Service):
     def filterPlayground(self, request):
         """Filter Playground"""
         q = Conference.query()
-        # field = "city"
-        # operator = "="
-        # value = "London"
-        # f = ndb.query.FilterNode(field, operator, value)
-        # q = q.filter(f)
         q = q.filter(Conference.city=="London")
         q = q.filter(Conference.topics=="Medical Innovations")
         q = q.filter(Conference.month==6)
@@ -735,8 +730,7 @@ class ConferenceApi(remote.Service):
         s_id = Session.allocate_ids(size=1, parent=c_key)[0]
         s_key = ndb.Key(Session, s_id, parent=c_key)
         data['key'] = s_key
-        # TODO : add session key to conf
-
+        
         # create Session & return (modified) SessionForm
         session = Session(**data)
         session.put()
