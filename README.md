@@ -34,13 +34,13 @@ the API explorer.
 
 ## Task 1 - Add sessions to a conference
 Sessions can have the following fields: 
-- name
-- speakerId (with a Speaker data model that includes name, email, bio)
-- duration (given in minutes)
-- typeOfSession (Workshop, Lecture, Keynote)
-- date (e.g. 2015-12-12)
-- startTime (e.g. 11:30)
-- location
+- `name`
+- `speakerId` with a Speaker data model that includes name, email, bio
+- `duration` given in minutes
+- `typeOfSession` can be `Workshop, Lecture, Keynote`
+- `date` e.g. 2015-12-12
+- `startTime` e.g. 11:30
+- `location`
 
 New sessions are created as children of a specific conference.
 
@@ -59,22 +59,22 @@ display only a certain type of sessions. By default, all types are displayed.
 When accessing the details of a certain conference, a list of its sessions is
 also displayed. For each of these sessions, a check is made to see if it
 belongs to the current user's wishlist or not. Depending on this, a link showing
-a "Add to wishlist" message or a heart symbol is displayed. Clicking this, will
-reverse the property by adding/removing the session from the wishlist.
+a `Add to wishlist` message or a `heart symbol` is displayed. Clicking this, 
+will reverse the property by adding/removing the session from the wishlist.
 
-The current wishlist can be seen by accessing the "Profile" tab.
+The current wishlist can be seen by accessing the `Profile` tab.
 
 ## Task 3 - Work on indexes and queries.
 
 Added 2 new queries:
-- getConfsInTownInInterval(city, startDate, endDate) - See what conferences are 
-in a certain town and are scheduled to start in a given time interval
-- getPopularConferences(topic) - Get popular conferences on a given topic. By 
+- `getConfsInTownInInterval(city, startDate, endDate)` - See what conferences 
+are in a certain town and are scheduled to start in a given time interval
+- `getPopularConferences(topic)` - Get popular conferences on a given topic. By 
 popular we understand conferences that can have at least 100 attendees and
 have less than 20 seats left available.
 
 Added given query:
-- queryPlayground() - Get sessions that are not workshops and start before 7PM.
+- `queryPlayground()` - Get sessions that are not workshops and start before 7PM.
 The obvious issue with this query is that the first solution most people would 
 think of (filter for sessionType != Workshop and  startTime < 7PM) is not
 compatible with Google's datastore, that does not accept 2 inequalities on
