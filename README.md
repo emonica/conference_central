@@ -42,10 +42,10 @@ Sessions can have the following fields:
 - `startTime` e.g. 11:30
 - `location`
 
-New sessions are created as children of a specific conference.
+New sessions are created as __children__ of a specific conference.
 
 When creating a new session, a user can enter either the name/email of a 
-potentially new speaker, or chose from a list of already registered speakers.
+potentially new speaker, or choose from a list of already registered speakers.
 
 Also, if a date is entered for the session, a check is made during validation
 to ensure it corrsponds with the parent conference's start and end dates.
