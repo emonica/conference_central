@@ -801,7 +801,6 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
     $scope.addToWishlist = function(sessionKey) {
         $scope.loading = true;
         gapi.client.conference.addToWishlist({
-            websafeConferenceKey: $routeParams.websafeConferenceKey,
             sessionKey: sessionKey
         }).execute(function (resp) {
             $scope.$apply(function () {
@@ -838,7 +837,6 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
     $scope.removeFromWishlist = function(sessionKey) {
         $scope.loading = true;
         gapi.client.conference.removeFromWishlist({
-            websafeConferenceKey: $routeParams.websafeConferenceKey,
             sessionKey: sessionKey
         }).execute(function (resp) {
             $scope.$apply(function () {
